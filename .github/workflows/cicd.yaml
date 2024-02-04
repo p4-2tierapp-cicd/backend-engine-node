@@ -1,4 +1,4 @@
-name: 'Build and deploy frontend'
+name: 'Build and deploy backend'
 
 on:
   push:
@@ -31,7 +31,7 @@ jobs:
           name: build
           path: dist
 
-  deploy_to_s3:
+  deploy_to_ec2:
     runs-on: 'ubuntu-latest'
     name: 'Deploy code to EC2'
     steps:
@@ -50,10 +50,12 @@ jobs:
           source: "dist"
           target: /var/sites/backend/
 
-      - name: Restart nginx webserver
+      - name: 'SSH into EC2 and Start Node.js App with PM2'
         uses: appleboy/ssh-action@v1.0.3
         with:
           host: ${{ secrets.EC2_PUBLIC_IP }}
           username: ${{ secrets.USERNAME }}
           key: ${{ secrets.SSH_PEM_KEY }}
-          script: sudo systemctl restart nginx
+          script: |
+            cd /var/sites/backend
+            pm2 start app.js --name my-app
