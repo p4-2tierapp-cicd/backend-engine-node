@@ -58,4 +58,4 @@ jobs:
           key: ${{ secrets.SSH_PEM_KEY }}
           script: |
             cd /var/sites/backend
-            pm2 start app.js --name my-app
+            pm2 restart app.js --name my-app
