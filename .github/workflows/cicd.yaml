@@ -1,0 +1,59 @@
+name: 'Build and deploy frontend'
+
+on:
+  push:
+    branches:
+      - "main"
+
+jobs:
+  build:
+    runs-on: 'ubuntu-latest'
+    name: 'Build code'
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        name: 'Install Node'
+        with:
+          node-version: '16.x'
+
+      - name: 'Install Dependency'
+        run: |
+          node -v
+          npm install
+
+      - name: 'Build source code'
+        run: npm run build
+
+      - uses: actions/upload-artifact@v4
+        name: 'Upload build as artifact'
+        with:
+          name: build
+          path: dist
+
+  deploy_to_s3:
+    runs-on: 'ubuntu-latest'
+    name: 'Deploy code to EC2'
+    steps:
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: build
+          path: dist
+
+      - name: Copy files via SCP
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.EC2_PUBLIC_IP }}
+          username: ${{ secrets.USERNAME }}
+          key: ${{ secrets.SSH_PEM_KEY }}
+          source: "dist"
+          target: /var/sites/backend/
+
+      - name: Restart nginx webserver
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.EC2_PUBLIC_IP }}
+          username: ${{ secrets.USERNAME }}
+          key: ${{ secrets.SSH_PEM_KEY }}
+          script: sudo systemctl restart nginx
